@@ -1,4 +1,4 @@
-# A Self Organizing Spiking Neural Network for Energy Efficient, Task Optimized Computation
+# Spiking Neural Matrix: A Self Organizing Spiking Neural Network for Energy Efficient, Task Optimized Computation
 
 ## 1. Introduction
 
