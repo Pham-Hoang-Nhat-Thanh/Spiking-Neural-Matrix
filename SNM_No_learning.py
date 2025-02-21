@@ -107,7 +107,7 @@ class SpikingMatrix:
     
     def update_input_pot(self, delta_pot):
         self.input_neurons_pot.assign_add(tf.reshape(delta_pot,[-1]))
-        spiked_input_neurons = tf.where(self.input_neurons_pot > self.spike_threshold)
+        spiked_input_neurons = tf.where(self.input_neurons_pot >= self.spike_threshold)
         self.input_neurons_pot.assign(tf.tensor_scatter_nd_update(self.input_neurons_pot, spiked_input_neurons, tf.reshape(tf.zeros_like(spiked_input_neurons, dtype=tf.float32), [-1])))
         if spiked_input_neurons.shape == [0,1]:
             return None
@@ -115,22 +115,25 @@ class SpikingMatrix:
     
     def update_hidden_pot(self, delta_pot):
         self.hidden_neurons_pot.assign_add(tf.reshape(delta_pot,[-1]))
-        spiked_hidden_neurons = tf.where(self.hidden_neurons_pot > self.spike_threshold)
+        spiked_hidden_neurons = tf.where(self.hidden_neurons_pot >= self.spike_threshold)
         self.hidden_neurons_pot.assign(tf.tensor_scatter_nd_update(self.hidden_neurons_pot, spiked_hidden_neurons, tf.reshape(tf.zeros_like(spiked_hidden_neurons, dtype=tf.float32), [-1])))
 
         if spiked_hidden_neurons.shape == [0,1]:
-            print("Dead network")
             return None
         return spiked_hidden_neurons        
     
     def update_output_pot(self, delta_pot):
         self.output_neurons_pot.assign_add(tf.reshape(delta_pot,[-1]))
-        spiked_output_neurons = tf.where(self.output_neurons_pot > self.spike_threshold)
+        spiked_output_neurons = tf.where(self.output_neurons_pot >= self.spike_threshold)
         self.output_neurons_pot.assign(tf.tensor_scatter_nd_update(self.output_neurons_pot, spiked_output_neurons, tf.reshape(tf.zeros_like(spiked_output_neurons, dtype=tf.float32), [-1])))
 
         if spiked_output_neurons.shape == [0,1]:
-            return None
+            return tf.zeros_like(self.output_neurons_pot, dtype=tf.int32)
         
+        # Convert spiked_output_neurons to one-hot encoding
+        spiked_output_neurons = tf.one_hot(tf.squeeze(spiked_output_neurons), self.output_neurons_pot.shape[-1]
+                                           , on_value=1, off_value=0, dtype=tf.int32)
+
         return spiked_output_neurons        
     
     def update_active_neurons(self, spiked_input_neurons, spiked_hidden_neurons, spiked_output_neurons):
@@ -143,12 +146,19 @@ class SpikingMatrix:
         """Clear active_neurons list"""
         self.active_neurons = [[], [self.active_neurons[1][-1]], []]
 
-    def forward(self, input_indices, input_times, output_length):
+    def get_input_current(self, input_indices, index):
+        """Get the current input from the input_indices list"""
         input_current = tf.zeros_like(self.input_neurons_pot, dtype=tf.float32)
-        input_current = tf.tensor_scatter_nd_update(input_current, input_indices, tf.reshape(tf.ones_like(input_indices, dtype=tf.float32) * 2, [-1]))
+        input_current = tf.tensor_scatter_nd_update(input_current, input_indices[index], tf.reshape(tf.ones_like(input_indices[index], dtype=tf.float32) * 2, [-1]))
+        return input_current
+
+    def forward(self, input_indices, input_times, output_length):
+        input_count = 0
 
         for t in range(output_length):
             if t in input_times:
+                input_current = self.get_input_current(input_indices, input_count)
+                input_count += 1
                 spiked_input_neurons = self.update_input_pot(input_current)
                 input_hidden_prob, input_hidden_weights = self.get_active_input_hidden(spiked_input_neurons)
                 hidden_delta_pot = self.calculate_current(self.choose_active_weights(input_hidden_prob, input_hidden_weights))
@@ -164,7 +174,7 @@ class SpikingMatrix:
                 output_delta_pot = self.calculate_current(self.choose_active_weights(hidden_output_prob, hidden_output_weights))     
                 spiked_output_neurons = self.update_output_pot(output_delta_pot)
             else:
-                spiked_output_neurons = None     
+                spiked_output_neurons = tf.zeros_like(self.output_neurons_pot, dtype=tf.int32)     
 
             spiked_hidden_neurons = self.update_hidden_pot(hidden_delta_pot)            
             self.update_active_neurons(spiked_input_neurons, spiked_hidden_neurons, spiked_output_neurons)
@@ -174,14 +184,14 @@ class SpikingMatrix:
 
 
 # Test the class
-if __name__ == "__main__":
-    matrix = SpikingMatrix(input_size=20, output_size=10, hidden_size=1000)
+#if __name__ == "__main__":
+#    matrix = SpikingMatrix(input_size=20, output_size=10, hidden_size=1000)
 
-    input_indices = tf.constant([[0], [1], [2], [3], [4], [5], [10], [15]], dtype=tf.int32)
-    input_times = [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 21]
-    output_length = 1000
-
-    input_layer, hidden_layer, output_layer = matrix.forward(input_indices, input_times, output_length)
-    matrix.reset_memory()
+#    input_indices = tf.constant([[0], [1], [2], [3], [4], [5], [10], [15]], dtype=tf.int32)
+#    input_times = [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 21]
+#    output_length = 1000
+#
+#    input_layer, hidden_layer, output_layer = matrix.forward(input_indices, input_times, output_length)
+#    matrix.reset_memory()
 
     # Print the output of each layer if needed
