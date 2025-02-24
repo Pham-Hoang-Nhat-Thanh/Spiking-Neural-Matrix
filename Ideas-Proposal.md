@@ -42,13 +42,7 @@ This proposal outlines a novel spiking neural network (SNN) that self-organizes 
 #### Exploration Phase (Forward Pass)
 
 - **Rapid Local Updates:** Neurons update synaptic weights based on STDP, capturing precise temporal correlations between pre- and postsynaptic spikes.
-- **Prospective Coding:** Neurons compute a "prospective voltage" to anticipate their voltage trajectory and potential errors. This is defined as:
 
-  \[
-  \widetilde{u}(t)=\frac{1}{\tau}\int_{t}^{\infty}u(t^\prime)\, e^{-\frac{t^\prime-t}{\tau}}\, dt^\prime
-  \]
-
-  This prospective signal enables neurons to "look ahead" and preemptively adjust to avoid errors.
 
 #### Reflection Phase (Feedback and Moderation)
 
