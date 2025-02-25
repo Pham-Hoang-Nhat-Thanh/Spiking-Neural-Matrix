@@ -23,7 +23,7 @@ class SpikingMatrix:
         self.hidden_output_weights = tf.Variable(tf.random.uniform([output_size, hidden_size], 0.01, 1, dtype=tf.float32))
 
         # A list to keep track of previously spiked neurons in all 3 layers
-        self.active_neurons = [[], [None], []]
+        self.active_neurons = ([], [None], [])
 
     def get_active_input_hidden(self, spiked_input_neurons):
         """Gather the probilities and weights according to spiked input neurons.\n
@@ -128,7 +128,7 @@ class SpikingMatrix:
         self.output_neurons_pot.assign(tf.tensor_scatter_nd_update(self.output_neurons_pot, spiked_output_neurons, tf.reshape(tf.zeros_like(spiked_output_neurons, dtype=tf.float32), [-1])))
 
         if spiked_output_neurons.shape == [0,1]:
-            return tf.zeros_like(self.output_neurons_pot, dtype=tf.int32)
+            return None
         
         # Convert spiked_output_neurons to one-hot encoding
         spiked_output_neurons = tf.one_hot(tf.squeeze(spiked_output_neurons), self.output_neurons_pot.shape[-1]
@@ -144,7 +144,7 @@ class SpikingMatrix:
     
     def reset_memory(self):
         """Clear active_neurons list"""
-        self.active_neurons = [[], [self.active_neurons[1][-1]], []]
+        self.active_neurons = [[], [], []]
 
     def get_input_current(self, input_indices, index):
         """Get the current input from the input_indices list"""
@@ -174,24 +174,10 @@ class SpikingMatrix:
                 output_delta_pot = self.calculate_current(self.choose_active_weights(hidden_output_prob, hidden_output_weights))     
                 spiked_output_neurons = self.update_output_pot(output_delta_pot)
             else:
-                spiked_output_neurons = tf.zeros_like(self.output_neurons_pot, dtype=tf.int32)     
+                spiked_output_neurons = None   
 
             spiked_hidden_neurons = self.update_hidden_pot(hidden_delta_pot)            
             self.update_active_neurons(spiked_input_neurons, spiked_hidden_neurons, spiked_output_neurons)
             
 
         return self.active_neurons
-
-
-# Test the class
-#if __name__ == "__main__":
-#    matrix = SpikingMatrix(input_size=20, output_size=10, hidden_size=1000)
-
-#    input_indices = tf.constant([[0], [1], [2], [3], [4], [5], [10], [15]], dtype=tf.int32)
-#    input_times = [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 21]
-#    output_length = 1000
-#
-#    input_layer, hidden_layer, output_layer = matrix.forward(input_indices, input_times, output_length)
-#    matrix.reset_memory()
-
-    # Print the output of each layer if needed
