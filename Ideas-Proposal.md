@@ -41,7 +41,7 @@ This proposal outlines a novel spiking neural network (SNN) that self-organizes 
 
 #### Exploration Phase (Forward Pass)
 
-- **Rapid Local Updates:** Neurons update synaptic weights based on STDP, capturing precise temporal correlations between pre- and postsynaptic spikes.
+- **Rapid Local Updates:** Neurons update synaptic weights based on STDP, capturing precise temporal correlations between pre- and postsynaptic spikes based on the current connections probabilities.
 
 
 #### Reflection Phase (Feedback and Moderation)
