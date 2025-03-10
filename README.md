@@ -1,2 +1,2 @@
 # Spiking-Neural-Matrix
-![Alt text](Workflow%20diagram.png)
+![Alt text](Workflow diagram.png)
